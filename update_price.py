@@ -1,4 +1,4 @@
-# VERSION 3 - FINAL ROBUST UPDATE
+# VERSION 4 - FINAL FIX FOR ID TYPE
 import os
 import requests
 import json
@@ -26,9 +26,10 @@ def update_plusbase_price(new_usd_price, new_usd_compare_price):
     """Update the product variant price via ShopBase/PlusBase Admin API."""
     clean_domain = SHOP_DOMAIN.replace("https://", "" ).replace("http://", "" ).strip("/")
     
-    # Using the most robust endpoint: /admin/products/{product_id}/variants/{variant_id}.json
+    # Using the most robust endpoint
     url = f"https://{API_KEY}:{API_PASSWORD}@{clean_domain}/admin/products/{PRODUCT_ID}/variants/{VARIANT_ID}.json"
     
+    # FORCE CONVERSION TO NUMBER
     try:
         v_id = int(str(VARIANT_ID ).strip())
     except Exception as e:
@@ -47,8 +48,8 @@ def update_plusbase_price(new_usd_price, new_usd_compare_price):
         "Content-Type": "application/json"
     }
     
-    print(f"--- VERSION 3 START ---")
-    print(f"Updating Product: {PRODUCT_ID}, Variant: {v_id}")
+    print(f"--- VERSION 4 START ---")
+    print(f"Updating Variant ID: {v_id}")
     print(f"Calculated USD Price: ${new_usd_price:.2f}")
     
     try:
@@ -60,8 +61,7 @@ def update_plusbase_price(new_usd_price, new_usd_compare_price):
             print(f"SUCCESS: Updated price to ${updated_price} USD")
         else:
             print(f"FAILED: {response.status_code} - {response.text}")
-            # If the product-specific URL fails, try the direct variant URL as a backup
-            print("Trying backup URL...")
+            # Backup URL if product-specific one fails
             backup_url = f"https://{API_KEY}:{API_PASSWORD}@{clean_domain}/admin/variants/{VARIANT_ID}.json"
             response = requests.put(backup_url, json=payload, headers=headers )
             if response.status_code == 200:
