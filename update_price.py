@@ -1,3 +1,4 @@
+# VERSION 2 - FIXED ID TYPE
 import os
 import requests
 import json
@@ -6,7 +7,6 @@ import json
 SHOP_DOMAIN = os.environ.get('SHOP_DOMAIN')
 API_KEY = os.environ.get('API_KEY')
 API_PASSWORD = os.environ.get('API_PASSWORD')
-PRODUCT_ID = os.environ.get('PRODUCT_ID')
 VARIANT_ID = os.environ.get('VARIANT_ID')
 TARGET_GBP_PRICE = 179.00  # Your fixed GBP price
 TARGET_GBP_COMPARE_PRICE = 449.00 # Your fixed GBP compare-at price
@@ -26,11 +26,11 @@ def update_plusbase_price(new_usd_price, new_usd_compare_price):
     clean_domain = SHOP_DOMAIN.replace("https://", "" ).replace("http://", "" ).strip("/")
     url = f"https://{API_KEY}:{API_PASSWORD}@{clean_domain}/admin/variants/{VARIANT_ID}.json"
     
-    # IMPORTANT: Convert VARIANT_ID to an integer (number ) to fix the 400 error
+    # FORCE CONVERSION TO NUMBER
     try:
-        v_id = int(VARIANT_ID)
-    except ValueError:
-        print(f"Error: VARIANT_ID '{VARIANT_ID}' is not a valid number.")
+        v_id = int(str(VARIANT_ID ).strip())
+    except Exception as e:
+        print(f"Error: VARIANT_ID '{VARIANT_ID}' is not a valid number: {e}")
         exit(1)
 
     payload = {
