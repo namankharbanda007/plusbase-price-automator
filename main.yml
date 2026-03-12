@@ -1,0 +1,31 @@
+name: Daily Price Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  update-price:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install requests
+
+    - name: Run price update script
+      env:
+        SHOP_DOMAIN: ${{ secrets.SHOP_DOMAIN }}
+        API_KEY: ${{ secrets.API_KEY }}
+        API_PASSWORD: ${{ secrets.API_PASSWORD }}
+        PRODUCT_ID: ${{ secrets.PRODUCT_ID }}
+        VARIANT_ID: ${{ secrets.VARIANT_ID }}
+      run: python update_price.py
