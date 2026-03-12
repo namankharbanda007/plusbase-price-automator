@@ -2,7 +2,8 @@ name: Daily Price Update
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs every day at midnight UTC
+    # Runs at 05:15 and 17:15 UTC every day (synchronized with PlusBase updates)
+    - cron: '15 5,17 * * *'
   workflow_dispatch: # Allows manual triggering
 
 jobs:
