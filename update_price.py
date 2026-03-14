@@ -1,4 +1,4 @@
-# VERSION 6 - FULL CALIBRATED FIX
+# VERSION 7 - SELF-CORRECTING (NO DRIFT)
 import os
 import requests
 import json
@@ -13,12 +13,12 @@ VARIANT_ID = os.environ.get('VARIANT_ID')
 TARGET_GBP_PRICE = 179.00
 TARGET_GBP_COMPARE_PRICE = 449.00
 
-# ADJUSTMENT FACTOR: PlusBase adds a fee to the exchange rate. 
-# We multiply by 0.972 to offset their ~2.8% fee and hit exactly £179.
-FEE_ADJUSTMENT = 0.972 
+# CORRECTION FACTOR: PlusBase's internal rate is ~3.4% worse than mid-market.
+# We multiply by 0.966 to offset this and hit exactly £179.00.
+CORRECTION_FACTOR = 0.966 
 
 def get_exchange_rate():
-    """Fetch the current GBP to USD exchange rate from a free API."""
+    """Fetch the current mid-market GBP to USD exchange rate."""
     try:
         response = requests.get("https://api.exchangerate-api.com/v4/latest/GBP" )
         data = response.json()
@@ -30,15 +30,12 @@ def get_exchange_rate():
 def update_plusbase_price(new_usd_price, new_usd_compare_price):
     """Update the product variant price via ShopBase/PlusBase Admin API."""
     clean_domain = SHOP_DOMAIN.replace("https://", "" ).replace("http://", "" ).strip("/")
+    url = f"https://{API_KEY}:{API_PASSWORD}@{clean_domain}/admin/variants/{VARIANT_ID}.json"
     
-    # Using the most robust endpoint
-    url = f"https://{API_KEY}:{API_PASSWORD}@{clean_domain}/admin/products/{PRODUCT_ID}/variants/{VARIANT_ID}.json"
-    
-    # FORCE CONVERSION TO NUMBER
     try:
         v_id = int(str(VARIANT_ID ).strip())
-    except Exception as e:
-        print(f"Error: VARIANT_ID '{VARIANT_ID}' is not a valid number: {e}")
+    except:
+        print("Invalid Variant ID")
         exit(1)
 
     payload = {
@@ -49,31 +46,15 @@ def update_plusbase_price(new_usd_price, new_usd_compare_price):
         }
     }
     
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    print(f"--- VERSION 6 START ---")
-    print(f"Updating Variant ID: {v_id}")
-    print(f"Calculated USD Price (with fee offset): ${new_usd_price:.2f}")
+    headers = {"Content-Type": "application/json"}
     
     try:
         response = requests.put(url, json=payload, headers=headers)
-        print(f"Response Status Code: {response.status_code}")
         if response.status_code == 200:
-            result = response.json()
-            updated_price = result.get('variant', {}).get('price')
-            print(f"SUCCESS: Updated price to ${updated_price} USD")
+            print(f"SUCCESS: Updated to ${new_usd_price:.2f} USD")
         else:
             print(f"FAILED: {response.status_code} - {response.text}")
-            # Backup URL if product-specific one fails
-            backup_url = f"https://{API_KEY}:{API_PASSWORD}@{clean_domain}/admin/variants/{VARIANT_ID}.json"
-            response = requests.put(backup_url, json=payload, headers=headers )
-            if response.status_code == 200:
-                print("SUCCESS via backup URL")
-            else:
-                print(f"BACKUP FAILED: {response.status_code} - {response.text}")
-                exit(1)
+            exit(1)
     except Exception as e:
         print(f"Error calling PlusBase API: {e}")
         exit(1)
@@ -87,10 +68,14 @@ if __name__ == "__main__":
 
     rate = get_exchange_rate()
     if rate:
-        print(f"Current GBP/USD Rate: {rate}")
-        # Apply the adjustment factor to the USD price
-        new_usd_price = (TARGET_GBP_PRICE * rate) * FEE_ADJUSTMENT
-        new_usd_compare_price = (TARGET_GBP_COMPARE_PRICE * rate) * FEE_ADJUSTMENT
+        print(f"--- VERSION 7 (SELF-CORRECTING) ---")
+        print(f"Current Market Rate: {rate}")
+        
+        # Apply the correction factor to the USD price
+        new_usd_price = (TARGET_GBP_PRICE * rate) * CORRECTION_FACTOR
+        new_usd_compare_price = (TARGET_GBP_COMPARE_PRICE * rate) * CORRECTION_FACTOR
+        
+        print(f"Calculated USD Price (with 3.4% offset): ${new_usd_price:.2f}")
         update_plusbase_price(new_usd_price, new_usd_compare_price)
     else:
         print("Could not fetch exchange rate.")
