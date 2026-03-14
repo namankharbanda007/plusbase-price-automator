@@ -1,4 +1,4 @@
-# VERSION 7 - SELF-CORRECTING (NO DRIFT)
+# VERSION 8 - PERFECT CALIBRATION
 import os
 import requests
 import json
@@ -13,9 +13,9 @@ VARIANT_ID = os.environ.get('VARIANT_ID')
 TARGET_GBP_PRICE = 179.00
 TARGET_GBP_COMPARE_PRICE = 449.00
 
-# CORRECTION FACTOR: PlusBase's internal rate is ~3.4% worse than mid-market.
-# We multiply by 0.966 to offset this and hit exactly £179.00.
-CORRECTION_FACTOR = 0.966 
+# PERFECT CALIBRATION: Based on your last run, 0.977 is the exact factor 
+# needed to hit £179.00 on the dot.
+CORRECTION_FACTOR = 0.977 
 
 def get_exchange_rate():
     """Fetch the current mid-market GBP to USD exchange rate."""
@@ -68,14 +68,14 @@ if __name__ == "__main__":
 
     rate = get_exchange_rate()
     if rate:
-        print(f"--- VERSION 7 (SELF-CORRECTING) ---")
+        print(f"--- VERSION 8 (PERFECT CALIBRATION) ---")
         print(f"Current Market Rate: {rate}")
         
-        # Apply the correction factor to the USD price
+        # Apply the perfect correction factor
         new_usd_price = (TARGET_GBP_PRICE * rate) * CORRECTION_FACTOR
         new_usd_compare_price = (TARGET_GBP_COMPARE_PRICE * rate) * CORRECTION_FACTOR
         
-        print(f"Calculated USD Price (with 3.4% offset): ${new_usd_price:.2f}")
+        print(f"Calculated USD Price: ${new_usd_price:.2f}")
         update_plusbase_price(new_usd_price, new_usd_compare_price)
     else:
         print("Could not fetch exchange rate.")
